@@ -1,123 +1,67 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # ==============================================================================
-# SCRIPT OVERVIEW: Advanced Research PINN Framework (V8.3 - Chronological_Forward_Chaining)
+# SCRIPT OVERVIEW: Physics-Informed Vision Transformer Framework for DO Sensing
 # ==============================================================================
-# This script is a comprehensive, configurable, and end-to-end framework for
-# training and evaluating an advanced Physics-Informed Neural Network (PINN).
-# The primary scientific goal is to estimate dissolved oxygen from video frames
-# of a sensor while simultaneously quantifying the degree of algae biofouling and
-# the model's own uncertainty in its predictions.
-
+# This script provides a comprehensive, end-to-end computational framework for
+# training and evaluating a Physics-Informed Neural Network (PINN). The primary
+# scientific objective is to estimate dissolved oxygen (DO) concentrations directly
+# from video frames of a luminescent sensor, while simultaneously quantifying
+# the degree of surface biofouling and the model's predictive uncertainty.
+#
+# This code serves as the companion framework for robust, real-world deployment
+# simulations, adhering to strict data validation protocols to prevent temporal
+# leakage and ensure scientific rigor.
+#
+# --- METHODOLOGICAL BREAKDOWN ---
+#
+# 1. DATA PREPROCESSING & SYNCHRONIZATION:
+#    - Automated discovery and chronological sorting of experimental datasets.
+#    - Synchronizes high-frequency video frames with low-frequency sensor telemetry
+#      using non-overlapping time windows to ensure target stability.
+#    - Caches extracted features to accelerate subsequent executions.
+#
+# 2. MODEL ARCHITECTURE (ViT-PINN):
+#    - VISION TRANSFORMER (ViT) BACKBONE: Leverages self-attention mechanisms to
+#      weigh the importance of every image patch globally. This enables the model
+#      to capture the diffuse, large-scale spatial heterogeneities characteristic
+#      of biofouling better than localized convolutional approaches.
+#    - MULTI-HEAD DESIGN: Simultaneously predicts oxygen concentration, a biofouling
+#      segmentation mask, experiment-specific Stern-Volmer parameters, and a
+#      spatial confidence map.
+#
+# 3. PHYSICS-INFORMED LOSS FUNCTION:
+#    - Integrates a composite loss function that balances standard empirical
+#      supervision (data loss) with a physics-based regularization term derived
+#      from the Stern-Volmer quenching equation.
+#    - NORMALIZED CONFIDENCE WEIGHTING: The physics residual is spatially weighted
+#      by the learned confidence map, allowing the model to dynamically down-weight
+#      regions corrupted by severe biofouling or optical occlusion.
+#
+# 4. RIGOROUS VALIDATION (Chronological Forward-Chaining):
+#    - To simulate a realistic deployment and prevent future data leakage, the
+#      framework employs a strict "Walk-Forward" temporal validation strategy:
+#        * TRAIN SET: Historical data (Days 1 to t).
+#        * VALIDATION SET: Immediate next phase (Day t+1) for hyperparameter tuning
+#          and early stopping.
+#        * TEST SET: All subsequent future data (Days t+2 onward) strictly reserved
+#          for final performance evaluation.
+#
+# 5. UNCERTAINTY QUANTIFICATION (Deep Ensembles):
+#    - Trains an ensemble of models with diverse initializations for each temporal
+#      split. Final predictions utilize the ensemble mean, while the standard
+#      deviation serves as a quantifiable metric of model confidence.
+#
+# --- AUTOMATED OUTPUT STRUCTURE ---
+# The framework automatically generates comprehensive diagnostic and results directories:
+# - `detailed_analysis_report/`: Hub for all analytical plots and underlying CSV data.
+#   - `0_data_preprocessing_reports/`: Alignment and signal quality diagnostics.
+#   - `1_data_split_reports/`: Train/Val/Test temporal distribution overlaps.
+#   - `split_train_[N]_days/`: Dedicated results for each chronological split, including:
+#     - Convergence trajectories and loss component analysis.
+#     - Spatial heatmaps of physics residuals and attention/confidence maps.
+#     - Parity plots and uncertainty correlations on the unseen future test set.
+# - `hpo_analysis/`: Hyperparameter optimization databases and importance plots.
+# - `cv_split_cache/`: Saved ensemble checkpoints for reproducible inference.
 # ==============================================================================
-# GUIDE FOR FUTURE PROMPTS/LLMS
-# ==============================================================================
-# This script represents a multi-version, iterative development of a sophisticated
-# Physics-Informed Neural Network (PINN) framework.
-#
-# --- OVERARCHING SCIENTIFIC GOAL ---
-# The primary objective is to create a model that can analyze video frames of a
-# custom optical oxygen sensor and accurately predict the dissolved oxygen (DO)
-# concentration. A key secondary goal is to simultaneously quantify the degree of
-# biofouling on the sensor's surface. Crucially, this version introduces
-# Uncertainty Quantification, allowing the model to report its confidence in each
-# prediction, a vital feature for real-world deployment and scientific trust.
-
-# --- BREAKDOWN OF THE METHODOLOGY ---
-#
-# 1. DATA DISCOVERY & PREPROCESSING (Stage 1):
-#    - The script scans a directory for experiments, caching a processed `.parquet`
-#      file in `PINN_features/` to accelerate subsequent runs.
-#    - DATA SORTING: Crucially, experiments are sorted CHRONOLOGICALLY based on
-#      dates found in folder names or metadata.
-#
-# 2. DATA SYNCHRONIZATION & FEATURE ENGINEERING (Stage 1):
-#    - CHUNKED SENSOR AVERAGING: Low-frequency sensor data is resampled into stable,
-#      non-overlapping time windows, to which high-frequency video frames are aligned.
-#
-# 3. PRE-FLIGHT DATA QUALITY CHECK (Stage 1.5):
-#    - Generates diagnostic plots for every experiment, including cachable red
-#      intensity heatmaps (`Red_Intensity_Heatmaps/`) to visually track biofouling.
-#
-# 4. MODEL ARCHITECTURE (Stage 2):
-#    - VISION TRANSFORMER (ViT) BACKBONE: A state-of-the-art Vision Transformer uses
-#      a self-attention mechanism to weigh the importance of every image patch relative
-#      to all other patches. This provides a global, contextual understanding of the
-#      image, making it superior for detecting diffuse, large-scale patterns
-#      characteristic of biofouling.
-#    - The model remains multi-headed, predicting oxygen, a biofouling mask,
-#      experiment-specific physics parameters, and a physics confidence map.
-#
-# 5. PHYSICS-INFORMED LOSS FUNCTION (Stage 3):
-#    - A composite loss function combining data loss and a physics loss derived
-#      from the Stern-Volmer equation.
-#    - NORMALIZED CONFIDENCE-WEIGHTED PHYSICS LOSS: The physics loss is spatially
-#      weighted by a learned, normalized confidence map, forcing the model to focus
-#      on physically relevant regions.
-#
-# 6. TRAINING & EVALUATION STRATEGY (Stages 4 & 5):
-#    - HYPERPARAMETER OPTIMIZATION (HPO): Uses Optuna, with results cached in
-#      `PINN_hpo_cache/` to avoid re-running.
-#    - CHRONOLOGICAL FORWARD CHAINING SPLIT (The "Walk-Forward" Validation):
-#      Unlike random K-Fold, this simulates a real-world deployment scenario where
-#      we train on past data to predict future data.
-#      - Logic: We iterate through the timeline.
-#        - TRAIN SET: Days 1 to t
-#        - VALIDATION SET: Day t+1 (Strictly used for model checkpointing/early stopping)
-#        - TEST SET: Days t+2 to End (Strictly used for final performance evaluation)
-#    - DEEP ENSEMBLE TRAINING: For each split, we train an ensemble of models.
-#      - PREDICTION: Mean of ensemble.
-#      - UNCERTAINTY: Standard deviation of ensemble.
-#    - CACHING: Extensive caching of models, HPO, and split results ensures that
-#      if the script crashes or is stopped, it resumes exactly where it left off without
-#      recomputing expensive operations.
-#
-# --- AUTOMATED FOLDER STRUCTURE FOR OUTPUTS ---
-# The script automatically creates the following directory structure:
-# - `PINN_Analysis_V8_3_Chronological/`: The main output directory for this run.
-#   - `detailed_analysis_report/`: Hub for all plots and data.
-#     - `0_data_preprocessing_reports/`: Plots showing data alignment and quality.
-#     - `1_data_split_reports/`: Plots of Train/Val/Test distributions for each split.
-#     - `split_train_1_days/`: Dedicated folder for the split trained on 1 day.
-#       - `fold_convergence_plots/`: Validation MAE vs. Physics Loss.
-#       - `pinn_loss_component_plots/`: Data vs. Physics loss components.
-#       - `pinn_physics_heatmaps/`: Spatial heatmaps of physics residual.
-#       - `final_test_set_plots/`: Final parity and uncertainty plots on the *FUTURE* test set.
-#       - `attention_confidence_maps/`: Visualizations of the learned confidence map.
-#       - `biofouling_analysis/`: Biofouling prediction analysis.
-#     - `split_train_2_days/`: Folder for split trained on 2 days, etc.
-#     - `_overall_performance_summary/`: Final plot showing Test MAE vs. Training Data Size.
-#   - `hpo_analysis/`: Artifacts from the Optuna HPO study.
-#   - `cv_split_cache/`: Caches trained models and results for each split configuration.
-# - Cache folders in `BASE_PROJECT_DIR`: `PINN_features/`, `PINN_hpo_cache/`, `Red_Intensity_Heatmaps/`.
-# ==============================================================================
-
-# --- VERSION HISTORY ---
-# NEW IN V8.3 - Chronological_Forward_Chaining:
-# - ADDED VALUE: The previous "Data Efficiency" approach used random hold-outs. This is scientifically
-#   risky for time-series data (like biofouling) because random splitting might allow the model to "peek"
-#   at future conditions (interpolation) rather than predicting them (extrapolation).
-#   V8.3 strictly adheres to causality: The model is ONLY trained on past days, tuned on the immediate
-#   next day (Validation), and tested on all subsequent days (Test). This rigorously tests the hypothesis:
-#   "Can the model learn the physics well enough from early days to predict oxygen correctly in the future,
-#   even as biofouling accumulates?"
-# - VALIDATION SET FOR MODEL SELECTION: A dedicated Validation Set (1 day) is introduced. In previous
-#   versions, the test set was sometimes used for monitoring. Now, the model explicitly saves the "Best Model"
-#   based on the lowest MAE on the Validation Day. This best model is then loaded to perform inference
-#   on the Test Set (the remaining future days). This creates a firewall between tuning and testing.
-# - 3-WAY DISTRIBUTION PLOTS: The distribution visualization now overlays Train, Validation, and Test
-#   distributions to ensure that the validation day is somewhat representative of the testing days.
-# - EXPANDED CSV EXPORT: Every single plot function now ensures a corresponding .csv is saved.
-
-# PRESERVED from V8.2 & V8.1:
-# - Iterative splitting loop (modified logic).
-# - Vision Transformer Backbone.
-# - Physics-Informed Loss with Confidence Mapping.
-# - Ensemble Uncertainty Quantification.
-# - Extensive Caching.
-# ==============================================================================
-
 
 # --- IMPORTS ---
 import os, sys, glob, re, traceback, warnings, random, json
