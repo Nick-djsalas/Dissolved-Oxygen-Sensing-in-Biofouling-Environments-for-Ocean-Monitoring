@@ -1,7 +1,7 @@
 # Physics-Informed Neural Networks for Robust Dissolved Oxygen Sensing in Biofouling Environments
 
 **Companion code for:**
-> Salaris N., Desjardins A., Tiwari M.K., *"A New Paradigm for Robust, Low-Cost Dissolved Oxygen Sensing in Biofouling Environments"*,
+> Salaris N., Desjardins A., Tiwari M.K., *"Deep Learning-Enabled Dissolved Oxygen Sensing in Biofouling Environments for Ocean Monitoring"*,
 
 ---
 
