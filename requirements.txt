@@ -1,0 +1,42 @@
+# =============================================================================
+# Python dependencies for the companion code of:
+#   Salaris N., Desjardins A., Tiwari M.K.,
+#   "A New Paradigm for Robust, Low-Cost Dissolved Oxygen Sensing in
+#    Biofouling Environments"
+#
+# Install everything with:        pip install -r requirements.txt
+# (See README.txt for the one extra note about installing PyTorch.)
+# Tested with Python 3.9 - 3.11.
+# =============================================================================
+
+# --- Core scientific stack ---
+numpy
+pandas
+polars            # high-speed CSV loading (chronological-scaling script)
+scipy
+scikit-learn
+
+# --- Gradient-boosted trees (classical / physics-reinforced baselines) ---
+lightgbm
+
+# --- Image & video I/O ---
+opencv-python
+
+# --- Plotting ---
+matplotlib
+seaborn
+
+# --- Utilities ---
+tqdm
+joblib
+
+# --- Hyperparameter optimisation ---
+optuna
+
+# --- Deep learning (PINN / Vision Transformer) ---
+# NOTE: On a GPU machine you may prefer the official CUDA build of PyTorch
+#       (https://pytorch.org/get-started/locally/). The plain wheels below
+#       install a CPU build, which runs everything correctly but more slowly.
+torch
+torchvision
+timm              # provides the pretrained Vision Transformer backbone
