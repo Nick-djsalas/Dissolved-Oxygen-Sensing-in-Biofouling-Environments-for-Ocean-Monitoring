@@ -1,4 +1,4 @@
-# Physics-Informed Neural Networks for Robust Dissolved Oxygen Sensing in Biofouling Environments
+# Deep Learning-Enabled Dissolved Oxygen Sensing in Biofouling Environments for Ocean Monitoring
 
 **Companion code for:**
 > Salaris N., Desjardins A., Tiwari M.K., *"Deep Learning-Enabled Dissolved Oxygen Sensing in Biofouling Environments for Ocean Monitoring"*,
@@ -7,13 +7,13 @@
 
 ## Overview
 
-This repository contains the complete computational framework for camera-based dissolved oxygen (DO) sensing via quenching of phosphorescence under biofouling conditions. Three main scripts reproduce the quantitative results in the manuscript and provide a robust framework for real-world deployment simulations.
+This repository contains the complete computational framework for camera-based dissolved oxygen (DO) sensing via quenching of phosphorescence under biofouling conditions. Three main scripts reproduce the quantitative results in the manuscript and provide a robust framework for real-world deployment simulations, including demonstrations of model scalability.
 
 | Script | Purpose | Paper sections |
 |--------|---------|----------------|
 | `classical_and_physics_reinforced_baselines.py` | Classical SV calibration, "Best Pixels" strategies, physics-reinforced LightGBM | Results §1, SI §S1 |
 | `pinn_vit_framework.py` | Physics-Informed Neural Networks (CNN & ViT) with deep ensembles via LOOCV | Results §2–§5, SI §S2–S5 |
-| `pinn_chronological_forward_chaining.py` | Physics-Informed ViT with strict Walk-Forward validation for real-world deployment simulation | Methods (Scalability) |
+| `pinn_chronological_forward_chaining.py` | Physics-Informed ViT with strict Walk-Forward validation for real-world deployment simulation and scalability analysis | Methods (Scalability) |
 
 All scripts share an identical data-processing pipeline to ensure fair comparison.
 
@@ -40,7 +40,7 @@ All scripts share an identical data-processing pipeline to ensure fair compariso
 | **CNN** | ResNet-18 + CBAM | Data only | Fig. 4 |
 | **PCNN / PCNNB** | ResNet-18 + CBAM + SV parameter head | Data + Physics (± Biofouling) | Figs. 6–7 |
 | **PViT-O / PViT-EA / PViT-EB** | ViT + physics loss + deep ensemble | Data + Physics | Figs. 8–9 |
-| **PViT-WF** (Walk-Forward) | ViT + physics loss + deep ensemble | Data + Physics | Methods (Scalability) |
+| **PViT-WF** (Walk-Forward) | ViT + physics loss + deep ensemble | Data + Physics | Figs. 7E-F, 10 |
 
 The PINN architecture comprises four heads (O₂ regression, biofouling mask, confidence map, SV parameter estimation) described in the Methods and SI §S4–S5.
 
