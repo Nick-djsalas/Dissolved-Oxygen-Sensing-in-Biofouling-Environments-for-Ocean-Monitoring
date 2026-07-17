@@ -125,7 +125,7 @@ ANALYSIS_INTERVALS_S = [(1450, 1650), (2300, 2500), (3100, 3300), (3900, 4100), 
 # --- Training settings ---
 EPOCHS = 35
 BATCH_SIZE = 24
-GRAD_ACCUMULATION_STEPS = 8            # effective batch size = BATCH_SIZE * this
+GRAD_ACCUMULATION_STEPS = 16            # effective batch size = BATCH_SIZE * this
 EARLY_STOPPING_PATIENCE = 12
 LR = 3e-4
 WEIGHT_DECAY = 1e-4
